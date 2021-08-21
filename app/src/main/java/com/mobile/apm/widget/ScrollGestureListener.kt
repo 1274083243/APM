@@ -17,6 +17,10 @@ class ScrollGestureListener(private val mTargetView: View, private val mParentVi
     private var mHasInit = false
     private var mScaleWidth = 0f
     private var mScaleHeight = 0f
+
+
+    /// 新的实现方案
+
     override fun onScroll(
         e1: MotionEvent?,
         e2: MotionEvent?,
@@ -26,20 +30,21 @@ class ScrollGestureListener(private val mTargetView: View, private val mParentVi
         Log.d("ScrollGestureListener", "onScroll:$distanceX,$distanceY")
         initBorderData()
         calculateScaleWidthAndHeight()
-        mTargetView.scaleY
         val innerDistanceX = -distanceX
         val innerDistanceY = -distanceY
         // 往左滑动
         if (innerDistanceX < 0) {
-            if (abs(mTotalScrollX + innerDistanceX) <= mMaxTranslateLeft) {
+
+            Log.d(TAG,"当前已经滑动的距离：$mTotalScrollX,$mMaxTranslateLeft")
+            if (abs(mTotalScrollX + innerDistanceX) < mMaxTranslateLeft) {
                 mTotalScrollX += innerDistanceX
-                Log.e(TAG, "没有到达边界:$mTotalScrollX")
+                Log.e(TAG, "没有到达边界:$mTotalScrollX,")
             } else {
                 mTotalScrollX = -mMaxTranslateLeft
                 Log.e(TAG, "到达边界:$mTotalScrollX")
             }
         } else {
-            if (mTotalScrollX + innerDistanceX <= mMaxTranslateRight) {
+            if (mTotalScrollX + innerDistanceX < mMaxTranslateRight) {
                 mTotalScrollX += innerDistanceX
             } else {
                 mTotalScrollX = mMaxTranslateRight
@@ -61,6 +66,7 @@ class ScrollGestureListener(private val mTargetView: View, private val mParentVi
         }
         mTargetView.translationX = mTotalScrollX
         mTargetView.translationY = mTotalScrollY
+        Log.d(TAG,"mTotalScrollX:$mTotalScrollX")
         return super.onScroll(e1, e2, innerDistanceX, innerDistanceY)
     }
 

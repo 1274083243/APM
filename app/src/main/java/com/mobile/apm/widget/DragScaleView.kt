@@ -1,12 +1,10 @@
 package com.mobile.apm.widget
 
 import android.content.Context
+import android.graphics.Matrix
 import android.util.AttributeSet
 import android.util.Log
-import android.view.GestureDetector
-import android.view.MotionEvent
-import android.view.ScaleGestureDetector
-import android.view.View
+import android.view.*
 import android.widget.FrameLayout
 
 class DragScaleView @JvmOverloads constructor(
@@ -19,24 +17,55 @@ class DragScaleView @JvmOverloads constructor(
     private lateinit var mScrollGestureListener: ScrollGestureListener
     private lateinit var mScrollDetector: GestureDetector
     private var mIsScaleEnd = true
+
+    private lateinit var mScaleMatrix: Matrix
+    private var mMatrixValues = FloatArray(9)
     override fun onFinishInflate() {
         super.onFinishInflate()
         mChildView = getChildAt(0)
-        mScrollGestureListener = ScrollGestureListener(mChildView,this)
+        mScrollGestureListener = ScrollGestureListener(mChildView, this)
         mScrollDetector = GestureDetector(context, mScrollGestureListener)
+        viewTreeObserver.addOnGlobalLayoutListener(object :
+            ViewTreeObserver.OnGlobalLayoutListener {
+            override fun onGlobalLayout() {
+                viewTreeObserver.removeOnGlobalLayoutListener(this)
+                initScaleMatrix()
+                mScaleMatrix.postScale(2.0f, 2.0f)
+                mScaleMatrix.getValues(mMatrixValues)
+                val fl = mMatrixValues[Matrix.MSCALE_X]
+                Log.d(TAG, "当前的缩放比例:$fl")
+                mChildView.invalidate()
+
+            }
+
+        })
     }
 
     override fun onScale(detector: ScaleGestureDetector): Boolean {
         val scaleFactor = detector.scaleFactor
-        Log.d(TAG, "缩放因子参数:$scaleFactor")
         mCurrentScaleNum = scaleFactor * mLastScaleNum
-        mChildView.scaleX = mCurrentScaleNum
+        if (mCurrentScaleNum < MIN_SCALE) {
+            mCurrentScaleNum = MIN_SCALE
+        } else if (mCurrentScaleNum > MAX_SCALE) {
+            mCurrentScaleNum = MAX_SCALE
+        }
+        Log.d(TAG, "缩放因子参数:$scaleFactor，$mCurrentScaleNum")
+//        mChildView.scaleX = mCurrentScaleNum
         mChildView.scaleY = mCurrentScaleNum
+        mScaleMatrix.postScale(2.0f, 2.0f)
+        mChildView.matrix.set(mScaleMatrix)
         return false
     }
 
     override fun onScaleBegin(detector: ScaleGestureDetector?): Boolean {
+
         return true
+    }
+
+    fun initScaleMatrix() {
+        if (!this::mScaleMatrix.isInitialized) {
+            mScaleMatrix = mChildView.matrix
+        }
     }
 
     override fun onScaleEnd(detector: ScaleGestureDetector?) {
@@ -50,11 +79,13 @@ class DragScaleView @JvmOverloads constructor(
             mIsScaleEnd = event.actionMasked == MotionEvent.ACTION_UP
             mScaleDetector.onTouchEvent(event)
         }
-        Log.d(TAG,"mIsScaleEnd:$mIsScaleEnd")
+//        Log.d(TAG, "mIsScaleEnd:$mIsScaleEnd")
         return true
     }
 
     companion object {
-        const val TAG = "ike"
+        const val TAG = "DragScaleView"
+        const val MIN_SCALE = 1f
+        const val MAX_SCALE = 2f
     }
 }
